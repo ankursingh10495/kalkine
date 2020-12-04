@@ -1,0 +1,173 @@
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+
+<style type="text/css">
+	.hide_btn
+	{
+		display: none;
+	}
+</style>
+<section>
+	<div class="container">
+		<div id="card_list">
+	
+		</div>
+		<div class="col-md-6">
+			<form id="add_card" method="post" role="form">
+			{% csrf_token %}
+			<h1>Add Card</h1>
+			<label>Card Title</label>
+			<input type="text" class="form-control" name="card_title" id="title">
+
+			<label>Card Text</label>
+			<input type="text" class="form-control" name="card_text" id="card_text">
+
+			<button type="submit">Add New Card</button>
+		</form>
+		</div>
+		
+	</div>
+</section>
+
+
+<script>
+	$(document).on('submit', '#add_card', function(e)
+	{
+		var card_title = $('#card_title').val();
+		var card_text = $('#card_text').val();
+
+		if((card_title == '') || (card_text == ''))
+		{
+			swal(
+			{
+			  title: "Error!",
+			  text: "Please fill all mandatory field.",
+			  icon: "warning",
+			  button: "Aww yiss!",
+			});
+
+			return false;
+		}
+
+		e.preventDefault();
+		var form_data = $(this).serialize();
+		$.ajax(
+		{
+			url: '/add_card/',
+			data: form_data,
+			type: 'POST',
+			success: function(result)
+			{
+				console.log(result);
+				if (result.id == 1)
+				{
+					$.ajax(
+					{
+						url: '/get_data_list/',
+						type: 'GET',
+						success: function(result)
+						{
+							console.log(result);
+							var i;
+							var op_html = '';
+							for (i = 0; i < result.length; ++i) 
+							{
+								op_html += '<div class="row"><label>'+result[i]['card_title']+'</label><br>';
+								op_html += '<button id="btn_'+result[i]['id']+'" class="btn btn-danger" onclick="delete_card('+result[i]['id']+');">Remove It!</button>';
+								op_html += '<button class="btn btn-success">Show Text!</button>';
+								op_html += '<div class="hide_btn">'+ result[i]['card_text']+ '</div></div>';
+							}
+							$('#card_list').html(op_html);
+							swal(
+							{
+							  title: "Success!",
+							  text: result.msg,
+							  icon: "success",
+							  button: "Aww yiss!",
+							});
+						}
+					});
+				}
+				else
+				{
+					swal(
+					{
+					  title: "Error!",
+					  text: result.msg,
+					  icon: "error",
+					  button: "Aww yiss!",
+					});
+				}
+			}
+
+		});
+	});
+
+	$(document).ready(function()
+	{
+		$.ajax(
+		{
+			url: '/get_data_list/',
+			type: 'GET',
+			success: function(result)
+			{
+				console.log(result);
+				var i;
+				var op_html = '';
+				for (i = 0; i < result.length; ++i) 
+				{
+					op_html += '<div class="row"><label>'+result[i]['card_title']+'</label><br>';
+					op_html += '<button id="btn_'+result[i]['id']+'" class="btn btn-danger" onclick="delete_card('+result[i]['id']+');">Remove It!</button>';
+					op_html += '<button class="btn btn-success">Show Text!</button>';
+					op_html += '<div class="hide_btn">'+ result[i]['card_text']+ '</div></div>';
+				}
+				$('#card_list').html(op_html);
+			}
+		});
+	});
+
+function delete_card(id)
+{
+	swal(
+	{
+		title: "Are you sure?",
+		text: "You want to delete this card?!",
+		icon: "warning",
+		buttons: true,
+		dangerMode: true,
+	})
+	.then((willDelete) => {
+			if (willDelete) 
+			{
+				$.ajax(
+				{
+					url: '/delete_card/',
+					data: {'card': id},
+					type: 'GET',
+					success: function(result)
+					{
+						console.log(result);
+						if (result.id == 1)
+						{
+							$('#btn_'+id).closest('div').remove();
+							swal("Card entry has been deleted!", 
+							{
+  								icon: "success",
+  							});
+						}
+					}
+				});
+		} 
+		else 
+		{
+		swal("Your imaginary file is safe!");
+		}
+	});
+}
+
+$(document).on('click', 'button.btn.btn-success', function()
+{
+	$(this).closest('div').find('.hide_btn').show();
+})
+</script>
